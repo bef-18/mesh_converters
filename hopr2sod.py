@@ -4,7 +4,7 @@ Script to convert HOPR output format (https://hopr.readthedocs.io/en/latest/user
 
 import numpy as np
 import h5py
-from sides import *
+from sides_mapping.hopr import *
 
 ##HOPR input file 
 BASEDIR  = '/home/benet/Dropbox/UNIVERSITAT/PhD/windsor/examples/Test_hopr'
@@ -12,9 +12,9 @@ CASESTR  = 'CYLINDER_CURVED'
 hoprname = '%s/%s_mesh.h5' % (BASEDIR, CASESTR)
 
 ##Specify element mappings:
-hex64_map = np.loadtxt('element_maps/hopr_gmsh/hex64.txt', dtype=np.int32)-1
+hex64_map = np.loadtxt('element_mapping/hopr_gmsh/hex64.txt', dtype=np.int32)-1
 hex64_map = np.argsort(hex64_map)
-qua16_map = np.loadtxt('element_maps/hopr_gmsh/qua16.txt', dtype=np.int32)-1
+qua16_map = np.loadtxt('element_mapping/hopr_gmsh/qua16.txt', dtype=np.int32)-1
 qua16_map = np.argsort(qua16_map)
 
 ##Debug output to GMSH
@@ -39,7 +39,7 @@ nnodxel = 64    #All elements are HEX64 -> ElemInfo has to be read to particular
 nsidxel = 6     #All elements are HEX64 -> ElemInfo has to be read to particularize for element type
 nnodxelbou = 16 #All boundary elemets are QUA16
 order = int(attrs['Ngeo'])
-sidemap = hexa_sides(order)
+sidemap = hopr_hexa_sides(order)
 nsid = nsidxel*nel
 # Read data to construct boundaries and periodicity information
 bcNames  = np.array(hoprfile['BCNames'])

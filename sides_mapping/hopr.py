@@ -1,7 +1,7 @@
 import numpy as np
 import h5py
 
-def hexa_sides(p):
+def hopr_hexa_sides(p):
     '''
         Based on fig 2.10 on HOPR documentation (link at the code header)
         k = 0 -> side 1
