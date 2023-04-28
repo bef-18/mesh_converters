@@ -4,8 +4,7 @@ Script to convert HOPR output format (https://hopr.readthedocs.io/en/latest/user
 
 import numpy as np
 import h5py
-import matplotlib.pyplot as plt
-
+import time
 from sides_mapping.hopr import *
 
 ##HOPR input file 
@@ -46,23 +45,34 @@ order = int(attrs['Ngeo'])
 sidemap = hopr_hexa_sides(order)
 nsid = nsidxel*nel
 # Read data to construct boundaries and periodicity information
+start = time.time()
 bcNames  = np.array(hoprfile['BCNames'])
 bcNames  = [elem.decode('utf-8') for elem in bcNames]
 bcCodes  = np.array(hoprfile['BCType'])[:,0]
 perCodes = np.array(hoprfile['BCType'])[:,3]
 bcIDs    = np.array(hoprfile['SideInfo'][:,4])
+end = time.time()
+elapsed = end -start
+print('Time to read boundary data: %f' % (elapsed))
 # Read data to construct connectivity
+start = time.time()
 globalID = np.array(hoprfile['GlobalNodeIDs'])
 myglobal = np.arange(nnod)
-indexsID = np.unique(globalID,return_index=True)[1]
-uniqueID = np.array([globalID[index] for index in sorted(indexsID)])
+uniqueID = np.unique(globalID)
+end = time.time()
+elapsed = end -start
+print('Time to read connectivity data: %f' % (elapsed))
+start = time.time()
 for nod in uniqueID:
     indices = np.where(globalID == nod)[0]
     if len(indices) > 1:
         for inod in indices:
             myglobal[inod] = indices[0]
+end = time.time()
+elapsed = end -start
+print('Time to filter unique nodes: %f' % (elapsed))
 # Read coordinates
-coord = np.array(hoprfile['NodeCoords'][np.unique(myglobal),:])
+coord = np.array(hoprfile['NodeCoords'])[np.unique(myglobal),:]
 nnodU  = coord.shape[0]
 #Close HOPR file
 hoprfile.close()
@@ -78,6 +88,7 @@ for i in range(myglobal.size):
     else:
         globalID[i] = dict_nums[myglobal[i]]
 lnods = globalID.reshape(nel,nnodxel,order='C')
+
 
 ##Build boundary elements
 bcmask  = bcIDs > 0
