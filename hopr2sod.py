@@ -4,11 +4,15 @@ Script to convert HOPR output format (https://hopr.readthedocs.io/en/latest/user
 
 import numpy as np
 import h5py
+import matplotlib.pyplot as plt
+
 from sides_mapping.hopr import *
 
 ##HOPR input file 
 BASEDIR  = '/home/benet/Dropbox/UNIVERSITAT/PhD/windsor/examples/Test_hopr'
 CASESTR  = 'CYLINDER_CURVED'
+#BASEDIR  = '/home/benet/Dropbox/UNIVERSITAT/PhD/windsor/examples/Test_hopr/cylind_jordi'
+#CASESTR  = 'CYLINDER'
 hoprname = '%s/%s_mesh.h5' % (BASEDIR, CASESTR)
 
 ##Specify element mappings:
@@ -76,26 +80,42 @@ for i in range(myglobal.size):
 lnods = globalID.reshape(nel,nnodxel,order='C')
 
 ##Build boundary elements
-bcsides = np.array(np.where(bcIDs>0), dtype=np.int32)
-codbo   = bcIDs[bcIDs>0]
+bcmask  = bcIDs > 0
+bcsides = np.array(np.where(bcmask), dtype=np.int32)[0,:]
+codbo   = bcIDs[bcmask]
 nelbou  = codbo.shape[0]
-bcelems = np.array(bcsides/6, dtype=np.int32)[0,:]
-locsid  = np.array(np.mod(bcsides,6), dtype=np.int32)[0,:]
+bcelems = np.array(bcsides/nsidxel, dtype=np.int32)
+locsid  = np.array(np.mod(bcsides,nsidxel), dtype=np.int32)
 lnodb   = np.zeros((nelbou,nnodxelbou), dtype=np.int32)
 for iside, side in enumerate(locsid):
     volel    = bcelems[iside]
     lnodb[iside,:] = lnods[volel, sidemap[side]]
 
 ##Build periodic elements
-persides = np.array(np.where(bcIDs>1), dtype=np.int32)
+'''
+perIDs   = np.where(bcCodes == 1)
+permask  = np.in1d(bcIDs,perIDs)
+persides = np.array(np.where(permask), dtype=np.int32)[0,:]
+codper   = bcIDs[permask]
+nelper   = codper.shape[0]
+print(nelper)
+perelems = np.array(persides/nsidxel, dtype=np.int32)
+locsid   = np.array(np.mod(persides,nsidxel), dtype=np.int32)
+lnodp    = np.zeros((nelper,nnodxelbou), dtype=np.int32)
+for iside, side in enumerate(locsid):
+    volel    = perelems[iside]
+    lnodp[iside,:] = lnods[volel, sidemap[side]]
+'''
 
 ##Write the output
 lnods = lnods[:,hex64_map]+1
 lnodb = lnodb[:,qua16_map]+1
-ntot  = nel + nelbou
+#lnodp = lnodp[:,qua16_map]+1
+ntot  = nel + nelbou #+ nelper
 
 #Write the output in SOD2D format
 # Open HDF5 file
+'''
 sodname      = 'output_sod.h5'
 sodfile      = h5py.File(sodname,'w')
 dims_group   = sodfile.create_group('dims')
@@ -105,9 +125,10 @@ nodes_dset   = sodfile.create_dataset('coords',(nnodU,3),dtype='f8',data=coord,c
 connec_dset  = sodfile.create_dataset('connec',(nel,lnods.shape[1]),dtype='i8',data=lnods,chunks=True,maxshape=(None,lnods.shape[1]))
 bounds_dset  = sodfile.create_dataset('boundFaces',(nelbou,lnodb.shape[1]),dtype='i8',data=lnodb,chunks=True,maxshape=(None,lnodb.shape[1]))
 boundId_dset = sodfile.create_dataset('boundFacesId',(nelbou,),dtype='i8',data=codbo,chunks=True,maxshape=(None))
-#per_dset = h5file.create_dataset('periodicFaces',(nel_periodic,lnodp_ndim),dtype='i8',data=lnodp,chunks=True,maxshape=(None,lnodp_ndim))
-#per_dset   = dims_group.create_dataset('numPeriodicFaces',(1,),dtype='i8',data=nel_periodic)
+#per_dset    = h5file.create_dataset('periodicFaces',(nel_periodic,lnodp_ndim),dtype='i8',data=lnodp,chunks=True,maxshape=(None,lnodp_ndim))
+#per_dset    = dims_group.create_dataset('numPeriodicFaces',(1,),dtype='i8',data=nel_periodic)
 sodfile.close()
+'''
 
 #Write to gmsh in case the user wants to visualize the mesh
 if visugmsh:
@@ -119,7 +140,7 @@ if visugmsh:
         f.write('PhysicalNames\n')
         f.write(f'{nbcs+1}\n')
         for i in range(nbcs):
-            f.write(f'{2} {bcCodes[i]} "{bcNames[i]}"\n')
+            f.write(f'{2} {i+2} "{bcNames[i]}"\n')
         f.write(f'{3} {1} "{"fluid"}"\n')
         f.write('$EndPhysicalNames\n')
 
