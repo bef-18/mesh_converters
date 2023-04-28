@@ -58,16 +58,12 @@ print('Time to read boundary data: %f' % (elapsed))
 start = time.time()
 globalID = np.array(hoprfile['GlobalNodeIDs'])
 myglobal = np.arange(nnod)
-uniqueID = np.unique(globalID)
+uniqueID,idx = np.unique(globalID, return_index=True)
 end = time.time()
 elapsed = end -start
 print('Time to read connectivity data: %f' % (elapsed))
 start = time.time()
-for nod in uniqueID:
-    indices = np.where(globalID == nod)[0]
-    if len(indices) > 1:
-        for inod in indices:
-            myglobal[inod] = indices[0]
+myglobal[idx] = idx
 end = time.time()
 elapsed = end -start
 print('Time to filter unique nodes: %f' % (elapsed))
@@ -78,17 +74,14 @@ nnodU  = coord.shape[0]
 hoprfile.close()
 
 ##Construct connectivity matrix
-next_num = 0
-dict_nums = {}
-for i in range(myglobal.size):
-    if myglobal[i] not in dict_nums:
-        dict_nums[myglobal[i]] = next_num
-        globalID[i] = next_num
-        next_num += 1
-    else:
-        globalID[i] = dict_nums[myglobal[i]]
+start = time.time()
+unique, inverse, counts = np.unique(myglobal, return_inverse=True, return_counts=True)
+dict_nums = dict(zip(unique, np.arange(len(unique))))
+globalID = np.vectorize(dict_nums.get)(myglobal)
 lnods = globalID.reshape(nel,nnodxel,order='C')
-
+end = time.time()
+elapsed = end -start
+print('Time to construct connectivity: %f' % (elapsed))
 
 ##Build boundary elements
 bcmask  = bcIDs > 0
