@@ -84,6 +84,7 @@ elapsed = end -start
 print('Time to construct connectivity: %f' % (elapsed))
 
 ##Build boundary elements
+start = time.time()
 bcmask  = bcIDs > 0
 bcsides = np.array(np.where(bcmask), dtype=np.int32)[0,:]
 codbo   = bcIDs[bcmask]
@@ -94,6 +95,9 @@ lnodb   = np.zeros((nelbou,nnodxelbou), dtype=np.int32)
 for iside, side in enumerate(locsid):
     volel    = bcelems[iside]
     lnodb[iside,:] = lnods[volel, sidemap[side]]
+end = time.time()
+elapsed = end -start
+print('Time to build boundaries: %f' % (elapsed))
 
 ##Build periodic elements
 '''
@@ -136,6 +140,7 @@ sodfile.close()
 
 #Write to gmsh in case the user wants to visualize the mesh
 if visugmsh:
+    start = time.time()
     with open('mesh_output.msh', 'w') as f:
         # Write the header information
         f.write('$MeshFormat\n2.2 0 8\n$EndMeshFormat\n')
@@ -170,3 +175,6 @@ if visugmsh:
             f.write(' '.join([str(x) for x in lnods[i,:]]))
             f.write('\n')
         f.write('$EndElements\n')
+    end = time.time()
+    elapsed = end -start
+    print('Time to write gmsh output: %f' % (elapsed))
